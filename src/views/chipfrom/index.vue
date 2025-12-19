@@ -19,7 +19,6 @@ import {
   Calendar,
   Download
 } from "@element-plus/icons-vue";
-import { el } from "element-plus/es/locales.mjs";
 
 // 0. 定义数据接口
 interface ChipData {
@@ -48,24 +47,6 @@ const statCards = reactive([
     value: 0,
     icon: DataLine,
     bg: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
-  },
-  {
-    title: "本月新增",
-    value: 0,
-    icon: Plus,
-    bg: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
-  },
-  {
-    title: "平均养护周期",
-    value: "0 days",
-    icon: Calendar,
-    bg: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
-  },
-  {
-    title: "活跃厂家",
-    value: 0,
-    icon: OfficeBuilding,
-    bg: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
   }
 ]);
 
@@ -76,14 +57,12 @@ const searchForm = reactive({
 });
 
 // 3. 表格数据核心变量
-// 【修复】使用明确的 ChipData 接口类型
 const cementData = ref<ChipData[]>([]);
 const loading = ref(false);
 
 // 4. 编辑/新增相关变量
 const editDialogVisible = ref(false);
 const isEdit = ref(false);
-// 【修复】使用 Partial<ChipData> 表示部分字段可能为空
 const editForm = reactive<Partial<ChipData>>({
   id: undefined,
   company: "",
@@ -102,14 +81,28 @@ const editForm = reactive<Partial<ChipData>>({
   test_days: "",
   created_at: ""
 });
-
+// 优化：时间格式化函数 (强制使用北京时间)
+const formatDate = (isoString: string) => {
+  if (!isoString) return "-";
+  const date = new Date(isoString);
+  const formatter = new Intl.DateTimeFormat("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Shanghai"
+  });
+  return formatter.format(date).replace(/\//g, "-");
+};
 // 5. 核心逻辑：获取数据
 const getData = async () => {
   loading.value = true;
   try {
     const res = await getChipList();
     console.log("API返回数据:", res);
-    // 这里如果后端返回的字段有些许差异，TypeScript不会报错，因为any兼容性，但运行时会正常显示
     cementData.value = res;
     // 更新统计数字
     if (res && res.length) {
@@ -169,7 +162,7 @@ const handleAdd = () => {
   isEdit.value = false;
   // 清空表单
   Object.keys(editForm).forEach(key => {
-    (editForm as any)[key] = ""; // 临时断言以允许赋值
+    (editForm as any)[key] = key === "id" ? undefined : "";
   });
   editDialogVisible.value = true;
 };
@@ -203,6 +196,10 @@ const saveEdit = async () => {
     message(isEdit.value ? "修改失败" : "新增失败", { type: "error" });
   }
 };
+
+defineOptions({
+  name: "ChipfromPage"
+});
 </script>
 
 <template>
@@ -264,9 +261,9 @@ const saveEdit = async () => {
     <el-card v-loading="loading" shadow="never">
       <el-table :data="cementData" border stripe :style="{ width: '100%' }">
         <!-- 数据库字段对齐 -->
+        <el-table-column prop="id" label="序号" width="80" />
         <el-table-column prop="company" label="公司名称" width="120" />
         <el-table-column prop="project" label="项目名称" width="120" />
-        <el-table-column prop="id" label="编号" width="80" />
         <el-table-column prop="structure" label="结构类型" width="120" />
         <el-table-column prop="contractor" label="施工单位" width="120" />
         <el-table-column prop="supplier" label="生产厂家" width="120" />
@@ -277,27 +274,31 @@ const saveEdit = async () => {
         <el-table-column prop="fine_aggregate" label="砂类型" width="100" />
         <el-table-column prop="coarse_aggregate" label="碎石类型" width="120" />
         <el-table-column prop="admixture" label="外加剂" width="120" />
-        <el-table-column prop="chip_code" label="试块编号" width="120" />
+        <el-table-column prop="chip_code" label="试块编号" width="150" />
         <el-table-column prop="test_days" label="养护周期" width="100" />
-        <el-table-column prop="created_at" label="生产时间" width="180" />
+        <el-table-column prop="created_at" label="生产时间" width="180">
+          <template #default="scope">
+            <!-- ✅ 使用 formatDate 函数包裹原始时间 -->
+            {{ formatDate(scope.row.created_at) }}
+          </template>
+        </el-table-column>
 
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="scope">
             <el-button
               size="small"
               type="primary"
-              style="margin-left: 6px"
+              style="margin-right: 8px"
               @click="handleEdit(scope.row)"
             >
-              <el-icon style="margin-left: 0"><Edit /></el-icon> 修改
+              <el-icon style="margin-right: 4px"><Edit /></el-icon> 修改
             </el-button>
             <el-button
               size="small"
               type="danger"
-              style="margin-right: 6px"
               @click="handleDelete(scope.row)"
             >
-              <el-icon style="margin-right: 0"><Delete /></el-icon> 删除
+              <el-icon style="margin-right: 4px"><Delete /></el-icon> 删除
             </el-button>
           </template>
         </el-table-column>
@@ -314,30 +315,33 @@ const saveEdit = async () => {
         <el-form-item label="公司名称">
           <el-input v-model="editForm.company" placeholder="请输入公司名称" />
         </el-form-item>
-        <el-form-item label="项目名称"
-          ><el-input v-model="editForm.project" placeholder="请输入项目名称"
-        /></el-form-item>
-        <el-form-item label="结构类型"
-          ><el-input v-model="editForm.structure" placeholder="请输入结构类型"
-        /></el-form-item>
-        <el-form-item label="施工单位"
-          ><el-input v-model="editForm.contractor" placeholder="请输入施工单位"
-        /></el-form-item>
-        <el-form-item label="生产厂家"
-          ><el-input v-model="editForm.supplier" placeholder="请输入生产厂家"
-        /></el-form-item>
-        <el-form-item label="负责人"
-          ><el-input v-model="editForm.prepared_by" placeholder="请输入负责人"
-        /></el-form-item>
-        <el-form-item label="尺寸"
-          ><el-input v-model="editForm.cube_size" placeholder="请输入尺寸"
-        /></el-form-item>
-        <el-form-item label="强度等级"
-          ><el-input v-model="editForm.grade" placeholder="请输入强度等级"
-        /></el-form-item>
-        <el-form-item label="水泥品牌"
-          ><el-input v-model="editForm.cement" placeholder="请输入水泥品牌"
-        /></el-form-item>
+        <el-form-item label="项目名称">
+          <el-input v-model="editForm.project" placeholder="请输入项目名称" />
+        </el-form-item>
+        <el-form-item label="结构类型">
+          <el-input v-model="editForm.structure" placeholder="请输入结构类型" />
+        </el-form-item>
+        <el-form-item label="施工单位">
+          <el-input
+            v-model="editForm.contractor"
+            placeholder="请输入施工单位"
+          />
+        </el-form-item>
+        <el-form-item label="生产厂家">
+          <el-input v-model="editForm.supplier" placeholder="请输入生产厂家" />
+        </el-form-item>
+        <el-form-item label="负责人">
+          <el-input v-model="editForm.prepared_by" placeholder="请输入负责人" />
+        </el-form-item>
+        <el-form-item label="尺寸">
+          <el-input v-model="editForm.cube_size" placeholder="请输入尺寸" />
+        </el-form-item>
+        <el-form-item label="强度等级">
+          <el-input v-model="editForm.grade" placeholder="请输入强度等级" />
+        </el-form-item>
+        <el-form-item label="水泥品牌">
+          <el-input v-model="editForm.cement" placeholder="请输入水泥品牌" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="editDialogVisible = false">取消</el-button>
