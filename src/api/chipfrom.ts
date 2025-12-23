@@ -29,3 +29,8 @@ export const deleteChip = (id: number) => {
 export const searchChip = (data: object) => {
   return http.request<any>("post", `${BASE_URL}/search`, { data });
 };
+
+/** 获取下拉框选项 (对应后端 router.get('/options/information')) */
+export const getChipOptions = () => {
+  return http.request<any>("get", `${BASE_URL}/options/information`);
+};

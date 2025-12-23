@@ -5,7 +5,8 @@ import {
   deleteChip,
   searchChip,
   addChip,
-  updateChip
+  updateChip,
+  getChipOptions
 } from "@/api/chipfrom";
 import { message } from "@/utils/message";
 import {
@@ -59,6 +60,11 @@ const searchForm = reactive({
 // 3. 表格数据核心变量
 const cementData = ref<ChipData[]>([]);
 const loading = ref(false);
+
+// 下拉框选项数据
+const projectOptions = ref<string[]>([]);
+const cubeSizeOptions = ref<string[]>([]);
+const testDaysOptions = ref<string[]>([]);
 
 // 4. 编辑/新增相关变量
 const editDialogVisible = ref(false);
@@ -115,9 +121,22 @@ const getData = async () => {
     loading.value = false;
   }
 };
-
+// 获取下拉框选项
+const getOptions = async () => {
+  try {
+    const res = await getChipOptions();
+    console.log("下拉选项数据:", res);
+    projectOptions.value = res.project || [];
+    cubeSizeOptions.value = res.cubeSize || [];
+    testDaysOptions.value = res.testDays || [];
+  } catch (error) {
+    console.error("获取选项失败:", error);
+    message("获取下拉选项失败", { type: "error" });
+  }
+};
 onMounted(() => {
   getData();
+  getOptions();
 });
 
 // 6. 交互功能
@@ -230,11 +249,19 @@ defineOptions({
     <el-card shadow="never" class="mb-4 search-card">
       <el-form :inline="true" :model="searchForm">
         <el-form-item label="项目名称">
-          <el-input
+          <el-select
             v-model="searchForm.projectName"
-            placeholder="输入项目名称"
+            placeholder="选择项目名称"
             clearable
-          />
+            filterable
+          >
+            <el-option
+              v-for="item in projectOptions"
+              :key="item"
+              :label="item"
+              :value="item"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="生产厂家">
           <el-input
@@ -275,7 +302,7 @@ defineOptions({
         <el-table-column prop="coarse_aggregate" label="碎石类型" width="120" />
         <el-table-column prop="admixture" label="外加剂" width="120" />
         <el-table-column prop="chip_code" label="试块编号" width="150" />
-        <el-table-column prop="test_days" label="养护周期" width="100" />
+        <el-table-column prop="test_days" label="养护天数" width="100" />
         <el-table-column prop="created_at" label="生产时间" width="180">
           <template #default="scope">
             <!-- ✅ 使用 formatDate 函数包裹原始时间 -->
@@ -316,7 +343,19 @@ defineOptions({
           <el-input v-model="editForm.company" placeholder="请输入公司名称" />
         </el-form-item>
         <el-form-item label="项目名称">
-          <el-input v-model="editForm.project" placeholder="请输入项目名称" />
+          <el-select
+            v-model="editForm.project"
+            placeholder="请选择项目名称"
+            clearable
+            filterable
+          >
+            <el-option
+              v-for="item in projectOptions"
+              :key="item"
+              :label="item"
+              :value="item"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="结构类型">
           <el-input v-model="editForm.structure" placeholder="请输入结构类型" />
@@ -334,13 +373,58 @@ defineOptions({
           <el-input v-model="editForm.prepared_by" placeholder="请输入负责人" />
         </el-form-item>
         <el-form-item label="尺寸">
-          <el-input v-model="editForm.cube_size" placeholder="请输入尺寸" />
+          <el-select
+            v-model="editForm.cube_size"
+            placeholder="请选择尺寸"
+            clearable
+            filterable
+          >
+            <el-option
+              v-for="item in cubeSizeOptions"
+              :key="item"
+              :label="item"
+              :value="item"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="强度等级">
           <el-input v-model="editForm.grade" placeholder="请输入强度等级" />
         </el-form-item>
         <el-form-item label="水泥品牌">
           <el-input v-model="editForm.cement" placeholder="请输入水泥品牌" />
+        </el-form-item>
+        <el-form-item label="砂类型">
+          <el-input
+            v-model="editForm.fine_aggregate"
+            placeholder="请输入砂类型"
+          />
+        </el-form-item>
+        <el-form-item label="碎石类型">
+          <el-input
+            v-model="editForm.coarse_aggregate"
+            placeholder="请输入碎石类型"
+          />
+        </el-form-item>
+        <el-form-item label="外加剂">
+          <el-input v-model="editForm.admixture" placeholder="请输入外加剂" />
+        </el-form-item>
+        <el-form-item label="试块编号">
+          <el-input v-model="editForm.chip_code" placeholder="请输入试块编号" />
+        </el-form-item>
+        <el-form-item label="养护天数">
+          <el-select
+            v-model="editForm.test_days"
+            placeholder="请选择养护天数"
+            clearable
+            filterable
+          >
+            <el-option
+              v-for="item in testDaysOptions"
+              :key="item"
+              :label="item"
+              :value="item"
+            />
+          </el-select>
         </el-form-item>
       </el-form>
       <template #footer>

@@ -265,10 +265,10 @@ const saveEdit = async () => {
           <template #default="scope">{{ scope.$index + 1 }}</template>
         </el-table-column>
 
-        <el-table-column prop="name" label="姓名" width="180" />
-        <el-table-column prop="email" label="邮箱账号" width="250" />
+        <el-table-column prop="name" label="姓名" width="220" />
+        <el-table-column prop="email" label="邮箱账号" width="300" />
 
-        <el-table-column prop="role" label="角色" width="200">
+        <el-table-column prop="role" label="角色" width="250">
           <template #default="scope">
             <el-tag
               :type="
@@ -287,10 +287,10 @@ const saveEdit = async () => {
         <el-table-column
           prop="organization"
           label="所属组织/公司"
-          width="200"
+          width="230"
         />
 
-        <el-table-column prop="permission_level" label="权限等级" width="200">
+        <el-table-column prop="permission_level" label="权限等级" width="220">
           <template #default="scope">
             <el-tag effect="plain" type="info">{{
               scope.row.permission_level
@@ -298,7 +298,7 @@ const saveEdit = async () => {
           </template>
         </el-table-column>
 
-        <el-table-column prop="created_at" label="创建时间" width="280">
+        <el-table-column prop="created_at" label="创建时间" width="300">
           <template #default="scope">
             <!-- ✅ 使用 formatDate 函数包裹原始时间 -->
             {{ formatDate(scope.row.created_at) }}
